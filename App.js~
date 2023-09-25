@@ -1,0 +1,307 @@
+import React from 'react';
+import { StatusBar } from 'expo-status-bar';
+import { StyleSheet, Text, View, SafeAreaView, Button, TextInput, Image, Pressable, TouchableOpacity } from 'react-native';
+import { useState } from "react";
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Icon from 'react-native-vector-icons/FontAwesome';
+
+
+
+// Retrieve the values
+const addTotalGoals = async (goalsToAdd, shotsToAdd, winsToAdd, loseToAdd) => {
+  try {
+    // Retrieve the current total_goals value
+    const currentTotalGoals = await AsyncStorage.getItem('totalGoals');
+    const currentTotalShots = await AsyncStorage.getItem('totalShots');
+    const currentTotalWins = await AsyncStorage.getItem('totalWins');
+    const currentTotalLose = await AsyncStorage.getItem('totalLose');
+    // Convert the retrieved value to an integer (default to 0 if it doesn't exist)
+    const parsedCurrentTotalGoals = currentTotalGoals ? parseInt(currentTotalGoals, 10) : 0;
+    const parsedCurrentTotalShots = currentTotalShots ? parseInt(currentTotalShots, 10) : 0;
+    const parsedCurrentTotalWins = currentTotalWins ? parseInt(currentTotalWins, 10) : 0;
+    const parsedCurrentTotalLose = currentTotalLose ? parseInt(currentTotalLose, 10) : 0;
+    // Add the new goalsToAdd to the existing total
+    const updatedTotalGoals = parsedCurrentTotalGoals + goalsToAdd;
+    const updatedTotalShots = parsedCurrentTotalShots + shotsToAdd;
+    const updatedTotalWins = parsedCurrentTotalWins + winsToAdd;
+    const updatedTotalLose = parsedCurrentTotalLose + loseToAdd;
+    // Save the updated total_goals value
+    await AsyncStorage.setItem('totalGoals', updatedTotalGoals.toString());
+    await AsyncStorage.setItem('totalShots', updatedTotalShots.toString());
+    await AsyncStorage.setItem('totalWins', updatedTotalWins.toString());
+    await AsyncStorage.setItem('totalLose', updatedTotalLose.toString());
+    // log that check it works
+    console.log(`Total Goals updated to: ${updatedTotalGoals}`);
+    console.log(`Total Shots updated to: ${updatedTotalShots}`);
+    console.log(`Total Wins updated to: ${updatedTotalWins}`);
+    console.log(`Total Lose updated to: ${updatedTotalLose}`);
+  } catch (error) {
+    console.error('Error updating:', error);
+  }
+};
+
+// screen one
+function HomeScreen({ navigation }){
+  return (
+    <SafeAreaView style={styles.container}>
+      <Image
+        source={require('./assets/hockey-mask.png')}
+        style={{ width: 150, height: 150 }}
+      />
+      <Text style={styles.title}>Goalie Stat Tracker</Text>
+      <View style={styles.buttonContainer}>
+        <Pressable style={styles.Pbutton} onPress={() => navigation.navigate('Add Stats')} >
+            <Text style={styles.text}>Add Stats</Text>
+        </Pressable>
+      </View>
+      <View style={styles.buttonContainer}>
+        <Pressable style={styles.Pbutton} onPress={() => navigation.navigate('All Stats')} >
+          <Text style={styles.text}>Stats</Text>
+        </Pressable>
+      </View>
+      <View style={styles.buttonContainer}>
+        <Pressable style={styles.Pbutton} onPress={() => navigation.navigate('Game History')} >
+          <Text style={styles.text}>History</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+function AddScreen({ navigation }) {
+
+  const [message, setMessage] = useState("");
+
+  const [count, setCount] = useState(0) 
+  
+  const [goals, setGoals] = useState(0)
+
+  const [selectedOption, setSelectedOption] = useState(null)
+
+  function decrementCount(){
+    if (count > 0) {
+      setCount(prevCount => prevCount - 1);
+    }
+  }
+  function incrementCount(){
+    setCount(prevCount => prevCount + 1)
+  }
+
+  function decrementGoals(){
+    if (goals > 0){
+      setGoals(prevGoals => prevGoals - 1);
+    }
+  }
+  function incrementGoals(){
+    setGoals(prevGoals => prevGoals + 1)
+  }
+
+  const handleWinPress = () => {
+    setSelectedOption('win');
+  };
+
+  const handleLosePress = () => {
+    setSelectedOption('lose');
+  };
+
+  const handleSubmit = () => {
+    console.log("Goals:", goals);
+    console.log("Shots:", count);
+    console.log("Message:", message);
+    
+    if (selectedOption === 'win') {
+      addTotalGoals(goals, count, 1, 0);
+    } else if (selectedOption === 'lose') {
+      addTotalGoals(goals, count, 0, 1);
+    }    
+
+    setGoals(0);
+    setCount(0);
+    setSelectedOption(null);
+    setMessage("");
+    
+  }
+
+  return (
+
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+      
+      <Text style={styles.textAdd}>Enter Opponent Here:</Text>
+        <TextInput
+          placeholder="Opposing team"
+          value={message}
+          onChangeText={(text) => setMessage(text)}
+          style={styles.input}
+      />
+
+      <Text style={styles.textAdd}>Shots:</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={styles.button}>
+          <Button onPress={decrementCount} title="-"></Button>
+        </View>
+        
+        <View style={styles.container}>
+        <Icon name="rocket" size={30} color="#900" />        
+        </View>
+
+	<TouchableOpacity 
+	            style={styles.floatingButton}
+	            onPress={this.decrementCount}>
+		<Icon name="plus" size={20} color="#900" />
+	</TouchableOpacity>
+
+        <Text>{count}</Text>
+        <View style={styles.button}>
+          <Button onPress={incrementCount} title="+"></Button>
+        </View>
+      </View>
+
+      <Text style={styles.textAdd}>Goals:</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>  
+        <View style={styles.button}>
+        <Button onPress={decrementGoals} title="-"></Button>
+      </View>
+
+      <Text>{goals}</Text>
+      <View style={styles.button}>
+        <Button onPress={incrementGoals} title="+"></Button>
+      </View>
+    </View>
+
+      <View style={styles.winLose}>
+    
+      <Pressable style={[styles.WLbutton, { backgroundColor: selectedOption === 'win' ? 'black' : 'gray' }]} onPress={handleWinPress}>
+        <Text style={styles.text}>Win</Text>  
+      </Pressable>  
+
+      <Pressable style={[styles.WLbutton, { backgroundColor: selectedOption === 'lose' ? 'black' : 'gray' }]} onPress={handleLosePress}>
+        <Text style={styles.text}>Lose</Text>
+      </Pressable>
+    </View>
+
+    <View style={styles.winLose}>
+      <Pressable style={styles.Pbutton} onPress={handleSubmit} >
+        <Text style={styles.text}>Submit</Text>
+      </Pressable>
+    </View>
+
+    </View>
+  );
+}
+
+// stats screen
+function Stats({ navigation }) {
+  return (
+    // first fetch data
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <Text>Details Screen</Text>
+      <Button
+        title="Go Home Rogers"
+        onPress={() => navigation.push('Home')}
+      />
+    </View>
+  );
+}
+
+// history screen
+function History({ navigation }) {
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <Text>Details Screen</Text>
+      <Button
+        title="No Games Played...GO PLAY BUDDY"
+        onPress={() => navigation.push('Home')}
+      />
+    </View>
+  );
+}
+
+const Stack = createNativeStackNavigator();
+
+function App() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="Home">
+        <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }}/>
+        <Stack.Screen name="Add Stats" component={AddScreen} />
+        <Stack.Screen name="All Stats" component={Stats} />
+        <Stack.Screen name="Game History" component={History} />
+      </Stack.Navigator> 
+    </NavigationContainer>
+  );
+}
+
+export default App;
+
+const styles = StyleSheet.create({
+  container: { // style for container
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  title: { // style for title
+    fontSize: 30,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  buttonContainer: { // style for buttons
+    width: 150,
+    marginTop: 15,
+  },
+  input: { // style for inputs
+    borderWidth: 1,
+    borderColor: 'gray',
+    backgroundColor: "#fff",
+    width: "55%",
+    color: "#000",
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    margin: 10,
+  }, 
+  button: { // more style for buttons
+    marginLeft: 10,
+    marginRight: 10,
+  }, 
+  winLose: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    marginTop: 20,
+  },
+  Pbutton: { // style for pressable buttons
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 4,
+    elevation: 3,
+    backgroundColor: 'black',
+  },
+  WLbutton: { // style for pressable buttons
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 4,
+    elevation: 3,
+  },
+  text: {
+    fontSize: 16,
+    lineHeight: 21,
+    fontWeight: 'bold',
+    letterSpacing: 0.25,
+    color: 'white',
+  },
+  textAdd:{
+    fontSize: 16,
+    lineHeight: 21,
+    fontWeight: 'bold',
+    letterSpacing: 0.25,
+    color: 'black',
+  },
+});
+
