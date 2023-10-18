@@ -1,0 +1,276 @@
+import { StyleSheet } from 'react-native';
+
+const styles = StyleSheet.create({
+
+    container: { // style for container
+      flex: 1,
+      backgroundColor: '#fff',
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    title: { // style for title
+      fontSize: 30,
+      fontWeight: 'bold',
+      marginBottom: 20,
+    },
+    buttonContainer: { // style for buttons
+      width: 150,
+      marginTop: 15,
+    },
+    input: { // style for inputs
+      borderWidth: 1,
+      borderColor: 'gray',
+      backgroundColor: "#fff",
+      width: "55%",
+      color: "#000",
+      borderRadius: 10,
+      paddingHorizontal: 15,
+      paddingVertical: 10,
+      margin: 10,
+    }, 
+    button: { // more style for buttons
+      marginLeft: 10,
+      marginRight: 10,
+    }, 
+    winLose: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      paddingHorizontal: 20,
+      marginTop: 20,
+    },
+    Pbutton: { // style for pressable buttons
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 20,
+      paddingHorizontal: 10,
+      borderRadius: 4,
+      elevation: 3,
+      backgroundColor: 'black',
+      marginBottom: 10,
+    },
+    PbuttonAdd: { // style for pressable buttons
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 32,
+      borderRadius: 4,
+      elevation: 3,
+      backgroundColor: 'black',
+    },
+    WLbutton: { // style for pressable buttons
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 32,
+      borderRadius: 4,
+      elevation: 3,
+      marginBottom: 20,
+    },
+    text: {
+      fontSize: 25,
+      lineHeight: 25,
+      fontWeight: 'bold',
+      letterSpacing: 0.25,
+      color: 'white',
+    },
+    textAdd:{
+      fontSize: 16,
+      lineHeight: 21,
+      fontWeight: 'bold',
+      letterSpacing: 0.25,
+      color: 'black',
+    },
+    floatingButton:{
+      borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.2)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'absolute',
+        width: 60,
+        height: 60,
+      marginTop: 20,
+      marginBottom: 20,
+        backgroundColor: '#fff',
+        borderRadius: 100,
+    },
+    textCounter: {
+      fontSize: 30,
+    },
+    statsContainer: {
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',  
+    },
+    statRow:{
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginVertical: 10,
+    },
+    statContainer2: {
+      alignItems: 'center',
+    },
+    leftSide: {
+      textAlign: "left",
+      fontSize: 24,
+      fontWeight: 'bold',
+    },
+    rightSide: {
+      textAlign: 'right',
+      fontSize: 24,
+      fontWeight: 'bold',
+    },
+    containerStats: {
+      flex: 1,
+      backgroundColor: '#fff',
+    },
+    userCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      marginTop:30,
+    },
+    userPhoto: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+    },
+    userInfo: {
+      flex: 1,
+      marginLeft: 10,
+    },
+    userName: {
+      fontWeight: 'bold',
+      fontSize: 18,
+      marginBottom: 5,
+    },
+    userFollowers: {
+      color: '#999',
+    },
+    editButton: {
+      padding: 10,
+      borderRadius: 5,
+      backgroundColor: '#008B8B',
+    },
+    editButtonText: {
+      color: '#fff',
+      fontWeight: 'bold',
+    },
+    statsCard: {
+      marginHorizontal: 20,
+      marginVertical: 10,
+      padding: 20,
+      borderRadius: 10,
+      backgroundColor: '#f4f4f4',
+    },
+    statsTitle: {
+      fontWeight: 'bold',
+      fontSize: 18,
+      marginBottom: 10,
+    },
+    statItem: {
+      marginTop:20,
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginHorizontal: 10,
+      marginVertical: 5,
+      borderRadius: 5,
+      backgroundColor: '#fff',
+      padding: 10,
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    statValue: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 5,
+    },
+    statsCategory: {
+      color: '#999',
+    },
+    containerHistory: {
+      flex: 1,
+      backgroundColor: '#EBEBEB',
+    },
+    formContentHistory: {
+      flexDirection: 'row',
+      marginTop: 30,
+    },
+    inputContainerHistory: {
+      borderBottomColor: '#F5FCFF',
+      backgroundColor: '#FFFFFF',
+      borderRadius: 30,
+      borderBottomWidth: 1,
+      height: 45,
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+      margin: 10,
+    },
+    iconHistory: {
+      width: 30,
+      height: 30,
+    },
+    iconBtnSearchHistory: {
+      alignSelf: 'center',
+    },
+    inputsHistory: {
+      height: 45,
+      marginLeft: 16,
+      borderBottomColor: '#FFFFFF',
+      flex: 1,
+    },
+    inputIconHistory: {
+      marginLeft: 15,
+      justifyContent: 'center',
+    },
+    saveButtonHistory: {
+      height: 45,
+      justifyContent: 'center',
+      alignItems: 'center',
+      margin: 10,
+      width: 70,
+      alignSelf: 'flex-end',
+      backgroundColor: '#40E0D0',
+      borderRadius: 30,
+    },
+    saveButtonTextHistory: {
+      color: 'white',
+    },
+    notificationListHistory: {
+      marginTop: 20,
+      padding: 10,
+    },
+    notificationBoxHistory: {
+      padding: 20,
+      marginTop: 5,
+      marginBottom: 5,
+      backgroundColor: '#FFFFFF',
+      flexDirection: 'row',
+      borderRadius: 10,
+      alignItems: 'center',
+    },
+    imageHistory: {
+      width: 45,
+      height: 45,
+    },
+    descriptionHistory: {
+      fontSize: 25,
+      color: 'black',
+      marginLeft: 15,
+    },
+    winLossText:{
+      fontSize: 50,
+      width: 45,
+      fontWeight: 'bold',
+    },
+  });
+  
+export default styles;
