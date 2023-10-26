@@ -1,12 +1,13 @@
 import React from 'react';
-import { Text, View, SafeAreaView, TextInput, Image, Pressable, TouchableOpacity, FlatList } from 'react-native';
+import { Text, View, SafeAreaView, TextInput, Image, Pressable, TouchableOpacity, FlatList, CommonActions } from 'react-native';
 import { useState, useEffect } from "react";
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import styles from './styles.js';
 import fetchHistory from './FetchHistory';
+import SegmentedControl from '@react-native-segmented-control/segmented-control';
 
 // global var for checking if addStats submitted
 let submitCheck = false;
@@ -126,7 +127,7 @@ function HomeScreen({ navigation }){
       />
       <Text style={styles.title}>Goalie Stat Tracker</Text>
       <View style={styles.buttonContainer}>
-        <Pressable style={styles.Pbutton} onPress={() => navigation.navigate('Add Stats')} >
+        <Pressable style={styles.Pbutton} onPress={() => navigation.navigate('Add Stats', {teamInit: null, shotInit: 0, goalInit: 0, winInit: 0, loseInit: 0})} >
             <Text style={styles.text}>Add Stats</Text>
         </Pressable>
       </View>
@@ -154,19 +155,35 @@ function HomeScreen({ navigation }){
 }
 
 // add stats screen
-function AddScreen({ navigation }) {
+function AddScreen({ route }) {
+
+  const navigation = useNavigation();
+
+  const { teamInit, shotInit, goalInit, winInit, loseInit } = route.params;
 
   const [message, setMessage] = useState("");
 
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useState(shotInit);
   
-  const [goals, setGoals] = useState(0);
-
-  const [selectedOption, setSelectedOption] = useState(null);
+  const [goals, setGoals] = useState(goalInit);
 
   const [isMessageDone, setMessageDone] = useState(false);
 
+  const [selectedOption, setSelectedOption] = useState(null);
   const [isWLDone, setWLDone] = useState(false);
+
+  useEffect(() => {
+    if (teamInit != null) {
+      setMessage(teamInit);
+      setMessageDone(true);
+    }
+    if (winInit === 1) {
+      handleWinPress();
+    } 
+    else if (loseInit === 1) {
+      handleLosePress();
+    }
+  }, [teamInit]);
 
   // decrement and increment shots
   function decrementCount(){
@@ -206,7 +223,10 @@ function AddScreen({ navigation }) {
   const handleSubmit = () => {
     if (isMessageDone == true && isWLDone == true) {
       if (selectedOption === 'win') {
+        // addTotalGoals() somehow?
         addTotalGoals(goals, count, 1, 0);
+        // TODO: change specific array in full array
+        // save new array as the old array
         addHistory(goals, count, 1, 0, message);
       } else if (selectedOption === 'lose') {
         addTotalGoals(goals, count, 0, 1);
@@ -350,7 +370,7 @@ function Stats({ navigation }) {
       <View style={styles.containerStats}>
         <View style={styles.userCard}>
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>My Goalie</Text>
+            <Text style={styles.userName}>My Name</Text>
             <Text style={styles.userFollowers}>Record: {stats.totalWins} - {stats.totalLose}</Text>
           </View>
         </View>
@@ -386,10 +406,11 @@ function History({ navigation }) {
     fetchDataHistory();
   }, []);
 
-  const handleClick = (teamHistory) => {
+  const handleClick = (teamHistory, fetchedHistoryStats, listIndices) => {
     const exactGame = teamHistory;
-    console.log('exact game', exactGame);
-    navigation.navigate('Game Stats', {exactGame});
+    const totalHistory = fetchedHistoryStats;
+    const teamIndices = listIndices;
+    navigation.navigate('Game Stats', {exactGame, totalHistory, teamIndices});
   }
 
   // Assuming fetchedHistoryStats is [3, 8, 1, 0, 'fdkfmsf']
@@ -400,6 +421,7 @@ function History({ navigation }) {
     [goals, shots, wins, loss, teamName] = fetchedHistoryStats[i];
     data[i] = {
       teamHistory: [teamName, shots, goals, wins, loss],
+      listIndices: i,
       descriptionHistory: `${teamName} - ${shots} shots, ${goals} goals`,
       winLoss: wins ? 'W' : 'L',
     };
@@ -414,7 +436,7 @@ function History({ navigation }) {
         data={data.reverse()}
         renderItem={({ item }) => {
           return (
-            <Pressable style={styles.notificationBoxHistory} onPress={() => handleClick(item.teamHistory)}>
+            <Pressable style={styles.notificationBoxHistory} onPress={() => handleClick(item.teamHistory, fetchedHistoryStats, item.listIndices)}>
               <Text style={styles.winLossText}>{item.winLoss}</Text>
               <Text style={styles.descriptionHistory}>{item.descriptionHistory}</Text>
             </Pressable>
@@ -428,7 +450,9 @@ function History({ navigation }) {
 // stats screen
 function GameStat({ route }) {
 
-    const [stats, setStats] = useState({
+  const navigation = useNavigation();
+
+  const [stats, setStats] = useState({
       totalGoals: 0,
       totalShots: 0,
       totalWins: 0,
@@ -436,7 +460,7 @@ function GameStat({ route }) {
     });
   
     const [statsAgain, setStatsAgain] = useState([]);
-    const {exactGame} = route.params;
+    const {exactGame, totalHistory, teamIndices} = route.params;
     const outcome = exactGame[3] === 1 ? 'Win' : exactGame[4] === 1 ? 'Loss' : '';
     console.log(outcome);
 
@@ -466,7 +490,12 @@ function GameStat({ route }) {
       <View style={styles.containerStats}>
         <View style={styles.userCard}>
           <View style={styles.userInfo}>
+          <View style={styles.userNameContainer}>
             <Text style={styles.userName}>{exactGame[0]}</Text>
+            <Pressable onPress={() => navigation.navigate('Edit Stats', {teamInit: exactGame[0], shotInit: exactGame[1], goalInit: exactGame[2], winInit: exactGame[3], loseInit: exactGame[4], totalList: totalHistory, teamIndices: teamIndices})}>
+              <Icon style={styles.editB} size={20} name="edit" />
+            </Pressable>
+          </View>
             <Text style={styles.userFollowers}></Text>
           </View>
         </View>
@@ -483,6 +512,231 @@ function GameStat({ route }) {
     );
   };
 
+  
+// add stats screen
+function EditStat({ route }) {
+
+  const navigation = useNavigation();
+
+  const { teamInit, shotInit, goalInit, winInit, loseInit, totalList, teamIndices } = route.params;
+  // indices of exact game in list of lists, allGames[indicesArray] = change this
+  const [indicesArray, setIndicesArray] = useState(teamIndices);
+  // list of list of all games
+  const [allGames, setAllGames] = useState(totalList);
+
+  const [message, setMessage] = useState("");
+
+  const [count, setCount] = useState(shotInit);
+  
+  const [goals, setGoals] = useState(goalInit);
+
+  const [isMessageDone, setMessageDone] = useState(false);
+
+  const [selectedOption, setSelectedOption] = useState(null);
+  
+  const [isWLDone, setWLDone] = useState(false);
+
+  useEffect(() => {
+    if (teamInit != null) {
+      setMessage(teamInit);
+      setMessageDone(true);
+    }
+    if (winInit === 1) {
+      handleWinPress();
+    } 
+    else if (loseInit === 1) {
+      handleLosePress();
+    }
+  }, [teamInit]);
+
+  // decrement and increment shots
+  function decrementCount(){
+    if (count > 0) {
+      setCount(prevCount => prevCount - 1);
+    }
+  }
+  function incrementCount(){
+    setCount(prevCount => prevCount + 1)
+  }
+  // decrement and increment goals
+  function decrementGoals(){
+    if (goals > 0){
+      setGoals(prevGoals => prevGoals - 1);
+    }
+  }
+  function incrementGoals(){
+    setGoals(prevGoals => prevGoals + 1)
+  }
+  // win or loss buttons
+  const handleWinPress = () => {
+    setSelectedOption('win');
+    setWLDone(true);
+  };
+
+  const handleLosePress = () => {
+    setSelectedOption('lose');
+    setWLDone(true);
+  };
+  // textbox
+  const handleTextChange = (text) => {
+    setMessage(text);
+    setMessageDone(true);
+  };
+
+  // submit button is pressed
+  const handleSubmit = () => {
+    if (isMessageDone == true && isWLDone == true) {
+      if (selectedOption === 'win') {
+        // edit history
+        editHistory(goals, count, 1, 0, message, indicesArray);
+        //addTotalGoals(goals, count, 1, 0);
+        // difference of initial goas to new goals, call add stats on differnce
+        //addHistory(goals, count, 1, 0, message);
+      } else if (selectedOption === 'lose') {
+        //addTotalGoals(goals, count, 0, 1);
+        editHistory(goals, count, 0, 1, message, indicesArray);
+      }    
+      setGoals(0);
+      setCount(0);
+      setSelectedOption(null);
+      setMessage("");
+      setWLDone(false);
+      setMessageDone(false);
+      SubmitCheck();
+      // reset navigation stack to reset history
+      navigation.reset({
+        index: 0,
+        routes: [{name: 'Home'}],
+      });
+    }
+  }
+
+  return (
+
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+      <Text style={styles.textAdd}>Enter Opponent Here:</Text>
+        <TextInput
+          placeholder="Opposing team"
+          value={message}
+          onChangeText={handleTextChange}
+          style={[styles.input, { marginBottom: 20 }]}
+      />
+      <Text style={styles.textAdd}>Shots:</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 30 }}>
+
+      <View style={styles.container}>
+          <TouchableOpacity 
+                style={[styles.floatingButton, {right: 20}]}
+                onPress={decrementCount}>
+            <Icon name="minus" size={40} color="black" />
+          </TouchableOpacity>
+      </View>
+
+      <Text style={[styles.textCounter, { fontSize: 30 }]}>{count}</Text>
+        
+        <View style={styles.container}>
+          <TouchableOpacity 
+            style={[styles.floatingButton, { left: 20 }]}
+            onPress={incrementCount}>
+            <Icon name="plus" size={40} color="black" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <Text style={styles.textAdd}>Goals:</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+      <View style={styles.container}>
+          <TouchableOpacity 
+                style={[styles.floatingButton, {right: 20}]}
+                onPress={decrementGoals}>
+            <Icon name="minus" size={40} color="black" />
+          </TouchableOpacity>
+      </View>
+
+      <Text style={[styles.textCounter, { fontSize: 30 }]}>{goals}</Text>
+      
+      <View style={styles.container}>
+          <TouchableOpacity 
+                style={[styles.floatingButton, {left: 20}]}
+                onPress={incrementGoals}>
+            <Icon name="plus" size={40} color="black" />
+          </TouchableOpacity>
+      </View>
+    </View>
+
+      <View style={styles.winLose}>
+    
+      <Pressable style={[styles.WLbutton, { backgroundColor: selectedOption === 'win' ? 'black' : 'gray', right: 5 }]} onPress={handleWinPress}>
+        <Text style={[styles.textAdd, {color: 'white'}]}>Win</Text>  
+      </Pressable>  
+
+      <Pressable style={[styles.WLbutton, { backgroundColor: selectedOption === 'lose' ? 'black' : 'gray', left: 5 }]} onPress={handleLosePress}>
+        <Text style={[styles.textAdd, {color: 'white'}]}>Lose</Text>
+      </Pressable>
+
+    </View>
+
+    <View style={styles.winLose}>
+      <Pressable style={[styles.PbuttonAdd, {backgroundColor: isMessageDone == true && isWLDone == true ? 'black' : 'gray'}]} 
+      onPress={() => { handleSubmit();}}>
+        <Text style={[styles.textAdd, {color: 'white'}]}>Submit</Text>
+      </Pressable>
+    </View>
+
+    </View>
+  );
+}
+
+const editHistory = async (goalsToAdd, shotsToAdd, winsToAdd, loseToAdd, teamName, indicesArray) => {
+  try{
+    let currentList = await AsyncStorage.getItem('totalList');
+    // Initialize currentList as an empty array if it's null
+    currentList = currentList ? JSON.parse(currentList) : [];
+    currentList[indicesArray] = [goalsToAdd, shotsToAdd, winsToAdd, loseToAdd, teamName];
+    await AsyncStorage.setItem('totalList', JSON.stringify(currentList));
+  }
+  catch (error) {
+    console.error('Error updating:', error);
+  }
+};
+
+const editTotal = async (goalsToAdd, shotsToAdd, winsToAdd, loseToAdd) => {
+  try {
+    // Retrieve the current stats value
+    const currentTotalGoals = await AsyncStorage.getItem('totalGoals');
+    const currentTotalShots = await AsyncStorage.getItem('totalShots');
+    const currentTotalWins = await AsyncStorage.getItem('totalWins');
+    const currentTotalLose = await AsyncStorage.getItem('totalLose');
+    const currentShutout = await AsyncStorage.getItem('totalShutout');
+
+    // Convert the retrieved value to an integer (default to 0 if it doesn't exist)
+    const parsedCurrentTotalGoals = currentTotalGoals ? parseInt(currentTotalGoals, 10) : 0;
+    const parsedCurrentTotalShots = currentTotalShots ? parseInt(currentTotalShots, 10) : 0;
+    const parsedCurrentTotalWins = currentTotalWins ? parseInt(currentTotalWins, 10) : 0;
+    const parsedCurrentTotalLose = currentTotalLose ? parseInt(currentTotalLose, 10) : 0;
+    let parsedCurrentShutout = currentShutout ? parseInt(currentShutout, 10) : 0;
+
+    // Add the new stats to the existing total
+    const updatedTotalGoals = parsedCurrentTotalGoals + goalsToAdd;
+    const updatedTotalShots = parsedCurrentTotalShots + shotsToAdd;
+    const updatedTotalWins = parsedCurrentTotalWins + winsToAdd;
+    const updatedTotalLose = parsedCurrentTotalLose + loseToAdd;
+    // if 0 goals scores, count game as a shutout
+    if (goalsToAdd === 0) {
+      parsedCurrentShutout = parsedCurrentShutout + 1;
+    }
+
+    // Save the updated values
+    await AsyncStorage.setItem('totalGoals', updatedTotalGoals.toString());
+    await AsyncStorage.setItem('totalShots', updatedTotalShots.toString());
+    await AsyncStorage.setItem('totalWins', updatedTotalWins.toString());
+    await AsyncStorage.setItem('totalLose', updatedTotalLose.toString());
+    await AsyncStorage.setItem('totalShutout', parsedCurrentShutout.toString());
+  } 
+  catch (error) {
+    console.error('Error updating:', error);
+  }
+};
 
 const Stack = createNativeStackNavigator();
 
@@ -495,6 +749,7 @@ function App() {
         <Stack.Screen name="All Stats" component={Stats} />
         <Stack.Screen name="Game History" component={History} />
         <Stack.Screen name="Game Stats" component={GameStat} />
+        <Stack.Screen name="Edit Stats" component={EditStat} />
       </Stack.Navigator> 
     </NavigationContainer>
   );
