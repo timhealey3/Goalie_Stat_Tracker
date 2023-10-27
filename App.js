@@ -527,12 +527,15 @@ function EditStat({ route }) {
   const [message, setMessage] = useState("");
 
   const [count, setCount] = useState(shotInit);
-  
+  const [beforeCount, setBeforeCount] = useState(shotInit);
+
   const [goals, setGoals] = useState(goalInit);
+  const [beforeGoal, setBeforeGoal] = useState(goalInit);
 
   const [isMessageDone, setMessageDone] = useState(false);
 
   const [selectedOption, setSelectedOption] = useState(null);
+  const [selectedBefore, setSelectedBefore] = useState(null);
   
   const [isWLDone, setWLDone] = useState(false);
 
@@ -542,9 +545,11 @@ function EditStat({ route }) {
       setMessageDone(true);
     }
     if (winInit === 1) {
+      setSelectedBefore('win');
       handleWinPress();
     } 
     else if (loseInit === 1) {
+      setSelectedBefore('lose');
       handleLosePress();
     }
   }, [teamInit]);
@@ -582,20 +587,34 @@ function EditStat({ route }) {
     setMessage(text);
     setMessageDone(true);
   };
-
+  const handleStat = () => {
+    const newCount = count - beforeCount;
+    const newGoal = goals - beforeGoal;
+    if (selectedBefore == 'win' && selectedOption == 'win'){
+      editStats(newCount, newGoal, goals, 0, 0);
+    }
+    else if (selectedBefore == 'win' && selectedOption == 'lose'){
+      editStats(newCount, newGoal, goals, -1, 1);
+    }
+    else if (selectedBefore == 'lose' && selectedOption == 'lose'){
+      editStats(newCount, newGoal, goals, 0, 0);
+    }
+    else if (selectedBefore == 'lose' && selectedOption == 'win'){
+      editStats(newCount, newGoal, goals, 1, -1);
+    }
+  };
   // submit button is pressed
   const handleSubmit = () => {
     if (isMessageDone == true && isWLDone == true) {
       if (selectedOption === 'win') {
         // edit history
         editHistory(goals, count, 1, 0, message, indicesArray);
-        //addTotalGoals(goals, count, 1, 0);
-        // difference of initial goas to new goals, call add stats on differnce
-        //addHistory(goals, count, 1, 0, message);
+        handleStat();
       } else if (selectedOption === 'lose') {
         //addTotalGoals(goals, count, 0, 1);
         editHistory(goals, count, 0, 1, message, indicesArray);
-      }    
+        handleStat();
+      } 
       setGoals(0);
       setCount(0);
       setSelectedOption(null);
@@ -700,11 +719,12 @@ const editHistory = async (goalsToAdd, shotsToAdd, winsToAdd, loseToAdd, teamNam
   }
 };
 
-const editTotal = async (goalsToAdd, shotsToAdd, winsToAdd, loseToAdd) => {
+// editStats(newCount, newGoal, goals, 1, -1);
+const editStats = async (shotsToAdd, goalsToAdd, initGoal, winsToAdd, loseToAdd) => {
   try {
     // Retrieve the current stats value
-    const currentTotalGoals = await AsyncStorage.getItem('totalGoals');
     const currentTotalShots = await AsyncStorage.getItem('totalShots');
+    const currentTotalGoals = await AsyncStorage.getItem('totalGoals');
     const currentTotalWins = await AsyncStorage.getItem('totalWins');
     const currentTotalLose = await AsyncStorage.getItem('totalLose');
     const currentShutout = await AsyncStorage.getItem('totalShutout');
@@ -722,7 +742,7 @@ const editTotal = async (goalsToAdd, shotsToAdd, winsToAdd, loseToAdd) => {
     const updatedTotalWins = parsedCurrentTotalWins + winsToAdd;
     const updatedTotalLose = parsedCurrentTotalLose + loseToAdd;
     // if 0 goals scores, count game as a shutout
-    if (goalsToAdd === 0) {
+    if (initGoal === 0) {
       parsedCurrentShutout = parsedCurrentShutout + 1;
     }
 
