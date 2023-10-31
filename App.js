@@ -7,10 +7,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import styles from './styles.js';
 import fetchHistory from './FetchHistory';
-import SegmentedControl from '@react-native-segmented-control/segmented-control';
+import deleteStats from './deleteStats.js';
+import { Alert } from 'react-native';
 
 // global var for checking if addStats submitted
-let submitCheck = false;
+let submitCheck = false;  
 
 // add game to async storage
 const addHistory = async (goalsToAdd, shotsToAdd, winsToAdd, loseToAdd, teamName) => {
@@ -370,7 +371,7 @@ function Stats({ navigation }) {
       <View style={styles.containerStats}>
         <View style={styles.userCard}>
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>My Name</Text>
+            <Text style={styles.userName}>My Goalie</Text>
             <Text style={styles.userFollowers}>Record: {stats.totalWins} - {stats.totalLose}</Text>
           </View>
         </View>
@@ -417,7 +418,6 @@ function History({ navigation }) {
   let data = [];
   let goals, shots, wins, loss, teamName;
   for(var i = 0; i < fetchedHistoryStats.length; i++){
-    console.log(fetchedHistoryStats[i]);
     [goals, shots, wins, loss, teamName] = fetchedHistoryStats[i];
     data[i] = {
       teamHistory: [teamName, shots, goals, wins, loss],
@@ -447,6 +447,17 @@ function History({ navigation }) {
   )
 }
 
+const deleteHistory = async (newList) => {
+  try{
+    // Initialize currentList as an empty array if it's null
+    const currentList = newList;
+    await AsyncStorage.setItem('totalList', JSON.stringify(currentList));
+  }
+  catch (error) {
+    console.error('Error updating:', error);
+  }
+};
+
 // stats screen
 function GameStat({ route }) {
 
@@ -462,7 +473,6 @@ function GameStat({ route }) {
     const [statsAgain, setStatsAgain] = useState([]);
     const {exactGame, totalHistory, teamIndices} = route.params;
     const outcome = exactGame[3] === 1 ? 'Win' : exactGame[4] === 1 ? 'Loss' : '';
-    console.log(outcome);
 
     useEffect(() => {
       // Update statsAgain whenever stats changes
@@ -476,8 +486,40 @@ function GameStat({ route }) {
       ]);
     }, [stats]);
 
+    const showDeleteConfirmation = () => {
+      Alert.alert(
+        'Confirm Deletion',
+        'Are you sure you want to delete this game? This can not be undone.',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Delete',
+            onPress: () => {
+              deleteGame(teamIndices, totalHistory);
+            },
+          },
+        ],
+        { cancelable: true }
+      );
+    };
+    
 
-  console.log("in game stat function", exactGame);
+    const deleteGame = (teamIndices, totalHistory) =>{
+      // delete game in array
+      totalHistory.splice(teamIndices, 1);
+      deleteHistory(totalHistory);
+      // shots, goals, win, lose
+      deleteStats(exactGame[1], exactGame[2], exactGame[3], exactGame[4]);
+      SubmitCheck();
+      navigation.reset({
+        index: 0,
+        routes: [{name: 'Home'}],
+      });
+    };
+
   // Assuming fetchedHistoryStats is [3, 8, 1, 0, 'fdkfmsf']
   const renderGameItem = ({ item }) => (
     <View style={styles.statItem}>
@@ -492,9 +534,19 @@ function GameStat({ route }) {
           <View style={styles.userInfo}>
           <View style={styles.userNameContainer}>
             <Text style={styles.userName}>{exactGame[0]}</Text>
-            <Pressable onPress={() => navigation.navigate('Edit Stats', {teamInit: exactGame[0], shotInit: exactGame[1], goalInit: exactGame[2], winInit: exactGame[3], loseInit: exactGame[4], totalList: totalHistory, teamIndices: teamIndices})}>
-              <Icon style={styles.editB} size={20} name="edit" />
-            </Pressable>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+
+              <Pressable onPress={() => showDeleteConfirmation()} style={{ marginRight: 20 }}>
+                <Icon style={styles.editB} size={30} name="trash" />
+              </Pressable>
+              
+              <Pressable onPress={() => navigation.navigate('Edit Stats', {teamInit: exactGame[0], shotInit: exactGame[1], goalInit: exactGame[2], winInit: exactGame[3], loseInit: exactGame[4], totalList: totalHistory, teamIndices: teamIndices})}>
+                <Icon style={styles.editB} size={30} name="edit" />
+              </Pressable>
+              
+            </View>
+
           </View>
             <Text style={styles.userFollowers}></Text>
           </View>
