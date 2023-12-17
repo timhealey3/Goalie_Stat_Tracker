@@ -36,20 +36,27 @@ const addTotalGoals = async (goalsToAdd, shotsToAdd, winsToAdd, loseToAdd) => {
     const currentTotalShots = await AsyncStorage.getItem('totalShots');
     const currentTotalWins = await AsyncStorage.getItem('totalWins');
     const currentTotalLose = await AsyncStorage.getItem('totalLose');
+    const currentTotalTie = await AsyncStorage.getItem('totalTie');
     const currentShutout = await AsyncStorage.getItem('totalShutout');
 
     // Convert the retrieved value to an integer (default to 0 if it doesn't exist)
     const parsedCurrentTotalGoals = currentTotalGoals ? parseInt(currentTotalGoals, 10) : 0;
     const parsedCurrentTotalShots = currentTotalShots ? parseInt(currentTotalShots, 10) : 0;
     const parsedCurrentTotalWins = currentTotalWins ? parseInt(currentTotalWins, 10) : 0;
-    const parsedCurrentTotalLose = currentTotalLose ? parseInt(currentTotalLose, 10) : 0;
+    let parsedCurrentTotalLose = currentTotalLose ? parseInt(currentTotalLose, 10) : 0;
+    let parsedCurrentTotalTie = currentTotalTie ? parseInt(currentTotalTie, 10) : 0; 
     let parsedCurrentShutout = currentShutout ? parseInt(currentShutout, 10) : 0;
 
     // Add the new stats to the existing total
     const updatedTotalGoals = parsedCurrentTotalGoals + goalsToAdd;
     const updatedTotalShots = parsedCurrentTotalShots + shotsToAdd;
     const updatedTotalWins = parsedCurrentTotalWins + winsToAdd;
-    const updatedTotalLose = parsedCurrentTotalLose + loseToAdd;
+    if (loseToAdd === 1){
+      parsedCurrentTotalLose = parsedCurrentTotalLose + loseToAdd;
+    }
+    if (loseToAdd === 2){
+      parsedCurrentTotalTie = parsedCurrentTotalTie + 1;
+    }
     // if 0 goals scores, count game as a shutout
     if (goalsToAdd === 0) {
       parsedCurrentShutout = parsedCurrentShutout + 1;
@@ -59,7 +66,8 @@ const addTotalGoals = async (goalsToAdd, shotsToAdd, winsToAdd, loseToAdd) => {
     await AsyncStorage.setItem('totalGoals', updatedTotalGoals.toString());
     await AsyncStorage.setItem('totalShots', updatedTotalShots.toString());
     await AsyncStorage.setItem('totalWins', updatedTotalWins.toString());
-    await AsyncStorage.setItem('totalLose', updatedTotalLose.toString());
+    await AsyncStorage.setItem('totalLose', parsedCurrentTotalLose.toString());
+    await AsyncStorage.setItem('totalTie', parsedCurrentTotalTie.toString());
     await AsyncStorage.setItem('totalShutout', parsedCurrentShutout.toString());
   } 
   catch (error) {
@@ -76,12 +84,14 @@ const fetchStats = async() => {
     const currentTotalShots = await AsyncStorage.getItem('totalShots');
     const currentTotalWins = await AsyncStorage.getItem('totalWins');
     const currentTotalLose = await AsyncStorage.getItem('totalLose');
+    const currentTotalTie = await AsyncStorage.getItem('totalTie');
     const currentShutout = await AsyncStorage.getItem('totalShutout')
     // Convert the retrieved value to an integer (default to 0 if it doesn't exist)
     const parsedCurrentTotalGoals = currentTotalGoals ? parseInt(currentTotalGoals, 10) : 0;
     const parsedCurrentTotalShots = currentTotalShots ? parseInt(currentTotalShots, 10) : 0;
     const parsedCurrentTotalWins = currentTotalWins ? parseInt(currentTotalWins, 10) : 0;
     const parsedCurrentTotalLose = currentTotalLose ? parseInt(currentTotalLose, 10) : 0;
+    const parsedCurrentTotalTie = currentTotalTie ? parseInt(currentTotalTie, 10) : 0;
     const parsedCurrentShutout = currentShutout ? parseInt(currentShutout, 10) : 0;
     // return the stats
     return {
@@ -89,6 +99,7 @@ const fetchStats = async() => {
       totalShots: parsedCurrentTotalShots,
       totalWins: parsedCurrentTotalWins,
       totalLose: parsedCurrentTotalLose,
+      totalTie: parsedCurrentTotalTie,
       totalShutout: parsedCurrentShutout,
     };
 };
@@ -214,6 +225,11 @@ function AddScreen({ route }) {
     setSelectedOption('lose');
     setWLDone(true);
   };
+
+  const handleTiePress = () => {
+    setSelectedOption('tie');
+    setWLDone(true);
+  };
   // textbox
   const handleTextChange = (text) => {
     setMessage(text);
@@ -232,7 +248,10 @@ function AddScreen({ route }) {
       } else if (selectedOption === 'lose') {
         addTotalGoals(goals, count, 0, 1);
         addHistory(goals, count, 0, 1, message);
-      }    
+      } else if (selectedOption === 'tie') {
+        addTotalGoals(goals, count, 0, 2);
+        addHistory(goals, count, 0, 2, message);
+      }
       setGoals(0);
       setCount(0);
       setSelectedOption(null);
@@ -303,8 +322,12 @@ function AddScreen({ route }) {
         <Text style={[styles.textAdd, {color: 'white'}]}>Win</Text>  
       </Pressable>  
 
-      <Pressable style={[styles.WLbutton, { backgroundColor: selectedOption === 'lose' ? 'black' : 'gray', left: 5 }]} onPress={handleLosePress}>
+      <Pressable style={[styles.WLbutton, { backgroundColor: selectedOption === 'lose' ? 'black' : 'gray'}]} onPress={handleLosePress}>
         <Text style={[styles.textAdd, {color: 'white'}]}>Lose</Text>
+      </Pressable>
+
+      <Pressable style={[styles.WLbutton, { backgroundColor: selectedOption === 'tie' ? 'black' : 'gray', left: 5 }]} onPress={handleTiePress}>
+        <Text style={[styles.textAdd, {color: 'white'}]}>Tie</Text>
       </Pressable>
 
     </View>
@@ -327,6 +350,7 @@ function Stats({ navigation }) {
     totalShots: 0,
     totalWins: 0,
     totalLose: 0,
+    totalTie: 0,
     totalShutout: 0,
   });
 
@@ -337,6 +361,7 @@ function Stats({ navigation }) {
     async function fetchData() {
       try {
         const fetchedStats = await fetchStats();
+        console.log(fetchedStats);
         setStats(fetchedStats);
       } catch (error) {
         console.error('Error fetching stats:', error);
@@ -352,11 +377,12 @@ function Stats({ navigation }) {
       { category: 'Shots', value: stats.totalShots },
       { category: 'Saves', value: stats.totalShots - stats.totalGoals },
       { category: 'Goals', value: stats.totalGoals },
-      { category: 'GAA', value: ((stats.totalGoals) / (stats.totalWins + stats.totalLose)).toFixed(2) },
+      { category: 'GAA', value: ((stats.totalGoals) / (stats.totalWins + stats.totalLose + stats.totalTie)).toFixed(2) },
       { category: 'SV%', value: ((stats.totalShots - stats.totalGoals) / stats.totalShots).toFixed(3) },
       { category: 'Shutouts', value: stats.totalShutout },
       { category: 'Wins', value: stats.totalWins },
       { category: 'Loses', value: stats.totalLose },
+      { category: 'Ties', value: stats.totalTie},
     ]);
   }, [stats]);
 
@@ -367,12 +393,13 @@ function Stats({ navigation }) {
     </View>
   );
 
+
     return (
       <View style={styles.containerStats}>
         <View style={styles.userCard}>
           <View style={styles.userInfo}>
             <Text style={styles.userName}>My Goalie</Text>
-            <Text style={styles.userFollowers}>Record: {stats.totalWins} - {stats.totalLose}</Text>
+            <Text style={styles.userFollowers}>Record: {stats.totalWins} - {stats.totalLose} - {stats.totalTie}</Text>
           </View>
         </View>
         <View style={styles.statsCard}>
@@ -423,7 +450,8 @@ function History({ navigation }) {
       teamHistory: [teamName, shots, goals, wins, loss],
       listIndices: i,
       descriptionHistory: `${teamName} - ${shots} shots, ${goals} goals`,
-      winLoss: wins ? 'W' : 'L',
+      winLoss: loss === 2 ? 'T' : loss ? 'L' : 'W',
+
     };
   }  
 
@@ -472,7 +500,7 @@ function GameStat({ route }) {
   
     const [statsAgain, setStatsAgain] = useState([]);
     const {exactGame, totalHistory, teamIndices} = route.params;
-    const outcome = exactGame[3] === 1 ? 'Win' : exactGame[4] === 1 ? 'Loss' : '';
+    const outcome = exactGame[3] === 1 ? 'Win' : exactGame[4] === 1 ? 'Loss' : exactGame[4] === 2 ? 'Tie' : '';
 
     useEffect(() => {
       // Update statsAgain whenever stats changes
@@ -535,7 +563,7 @@ function GameStat({ route }) {
           <View style={styles.userNameContainer}>
             <Text style={styles.userName}>{exactGame[0]}</Text>
 
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' }}>
 
               <Pressable onPress={() => showDeleteConfirmation()} style={{ marginRight: 20 }}>
                 <Icon style={styles.editB} size={30} name="trash" />
@@ -604,6 +632,10 @@ function EditStat({ route }) {
       setSelectedBefore('lose');
       handleLosePress();
     }
+    else if (loseInit == 2){
+      setSelectedBefore('tie');
+      handleTiePress();
+    }
   }, [teamInit]);
 
   // decrement and increment shots
@@ -634,6 +666,11 @@ function EditStat({ route }) {
     setSelectedOption('lose');
     setWLDone(true);
   };
+
+  const handleTiePress = () => {
+    setSelectedOption('tie');
+    setWLDone(true);
+  }
   // textbox
   const handleTextChange = (text) => {
     setMessage(text);
@@ -643,16 +680,31 @@ function EditStat({ route }) {
     const newCount = count - beforeCount;
     const newGoal = goals - beforeGoal;
     if (selectedBefore == 'win' && selectedOption == 'win'){
-      editStats(newCount, newGoal, goals, 0, 0);
+      editStats(newCount, newGoal, goals, 0, 0, 0);
     }
     else if (selectedBefore == 'win' && selectedOption == 'lose'){
-      editStats(newCount, newGoal, goals, -1, 1);
+      editStats(newCount, newGoal, goals, -1, 1, 0);
+    }
+    else if (selectedBefore == 'win' && selectedOption == 'tie'){
+      editStats(newCount, newGoal, goals, -1, 0, 1);
     }
     else if (selectedBefore == 'lose' && selectedOption == 'lose'){
-      editStats(newCount, newGoal, goals, 0, 0);
+      editStats(newCount, newGoal, goals, 0, 0, 0);
     }
     else if (selectedBefore == 'lose' && selectedOption == 'win'){
-      editStats(newCount, newGoal, goals, 1, -1);
+      editStats(newCount, newGoal, goals, 1, -1, 0);
+    }
+    else if (selectedBefore == 'lose' && selectedOption == 'tie'){
+      editStats(newCount, newGoal, goals, 0, -1, 1);
+    }
+    else if (selectedBefore == 'tie' && selectedOption == 'tie'){
+      editStats(newCount, newGoal, goals, 0, 0, 0)
+    }
+    else if (selectedBefore == 'tie' && selectedOption == 'win'){
+      editStats(newCount, newGoal, goals, 1, 0, -1) 
+    }
+    else if (selectedBefore == 'tie' && selectedOption == 'lose'){
+      editStats(newCount, newGoal, goals, 0, 1, -1) 
     }
   };
   // submit button is pressed
@@ -666,7 +718,10 @@ function EditStat({ route }) {
         //addTotalGoals(goals, count, 0, 1);
         editHistory(goals, count, 0, 1, message, indicesArray);
         handleStat();
-      } 
+      } else if (selectedOption === 'tie') {
+        editHistory(goals, count, 0, 2, message, indicesArray);
+        handleStat();  
+      }
       setGoals(0);
       setCount(0);
       setSelectedOption(null);
@@ -741,8 +796,12 @@ function EditStat({ route }) {
         <Text style={[styles.textAdd, {color: 'white'}]}>Win</Text>  
       </Pressable>  
 
-      <Pressable style={[styles.WLbutton, { backgroundColor: selectedOption === 'lose' ? 'black' : 'gray', left: 5 }]} onPress={handleLosePress}>
+      <Pressable style={[styles.WLbutton, { backgroundColor: selectedOption === 'lose' ? 'black' : 'gray'}]} onPress={handleLosePress}>
         <Text style={[styles.textAdd, {color: 'white'}]}>Lose</Text>
+      </Pressable>
+
+      <Pressable style={[styles.WLbutton, { backgroundColor: selectedOption === 'tie' ? 'black' : 'gray', left: 5 }]} onPress={handleTiePress}>
+        <Text style={[styles.textAdd, {color: 'white'}]}>Tie</Text>
       </Pressable>
 
     </View>
@@ -772,13 +831,14 @@ const editHistory = async (goalsToAdd, shotsToAdd, winsToAdd, loseToAdd, teamNam
 };
 
 // editStats(newCount, newGoal, goals, 1, -1);
-const editStats = async (shotsToAdd, goalsToAdd, initGoal, winsToAdd, loseToAdd) => {
+const editStats = async (shotsToAdd, goalsToAdd, initGoal, winsToAdd, loseToAdd, tieToAdd) => {
   try {
     // Retrieve the current stats value
     const currentTotalShots = await AsyncStorage.getItem('totalShots');
     const currentTotalGoals = await AsyncStorage.getItem('totalGoals');
     const currentTotalWins = await AsyncStorage.getItem('totalWins');
     const currentTotalLose = await AsyncStorage.getItem('totalLose');
+    const currentTotalTie = await AsyncStorage.getItem('totalTie');
     const currentShutout = await AsyncStorage.getItem('totalShutout');
 
     // Convert the retrieved value to an integer (default to 0 if it doesn't exist)
@@ -786,6 +846,7 @@ const editStats = async (shotsToAdd, goalsToAdd, initGoal, winsToAdd, loseToAdd)
     const parsedCurrentTotalShots = currentTotalShots ? parseInt(currentTotalShots, 10) : 0;
     const parsedCurrentTotalWins = currentTotalWins ? parseInt(currentTotalWins, 10) : 0;
     const parsedCurrentTotalLose = currentTotalLose ? parseInt(currentTotalLose, 10) : 0;
+    const parsedCurrentTotalTie = currentTotalTie ? parseInt(currentTotalTie, 10) : 0;
     let parsedCurrentShutout = currentShutout ? parseInt(currentShutout, 10) : 0;
 
     // Add the new stats to the existing total
@@ -793,6 +854,7 @@ const editStats = async (shotsToAdd, goalsToAdd, initGoal, winsToAdd, loseToAdd)
     const updatedTotalShots = parsedCurrentTotalShots + shotsToAdd;
     const updatedTotalWins = parsedCurrentTotalWins + winsToAdd;
     const updatedTotalLose = parsedCurrentTotalLose + loseToAdd;
+    const updatedTotalTie = parsedCurrentTotalTie + tieToAdd;
     // if 0 goals scores, count game as a shutout
     if (initGoal === 0) {
       parsedCurrentShutout = parsedCurrentShutout + 1;
@@ -803,6 +865,7 @@ const editStats = async (shotsToAdd, goalsToAdd, initGoal, winsToAdd, loseToAdd)
     await AsyncStorage.setItem('totalShots', updatedTotalShots.toString());
     await AsyncStorage.setItem('totalWins', updatedTotalWins.toString());
     await AsyncStorage.setItem('totalLose', updatedTotalLose.toString());
+    await AsyncStorage.setItem('totalTie', updatedTotalTie.toString());
     await AsyncStorage.setItem('totalShutout', parsedCurrentShutout.toString());
   } 
   catch (error) {
